@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>room chat </title>
+</head>
+
+<body>
+
+    <label>我是: <span id="clientName"></span></label>
+    <br />
+    <label>频道名:</label>
+    <input type="text" id="txtRoom" />
+    <button type="button" id="btn-joinRoom">订阅频道</button>
+    <button type="button" id="btn-leaveRoom">退订频道</button>
+    <br />
+
+    <label>聊天信息:</label><br />
+    <textarea id="content" style="height: 200px; width:300px;"></textarea>
+    <br />
+    <input id="sendMsg" type="text" />
+    <button id="btn_send">发送</button>
+
+    <!-- 首先引入 socket.io 客户端脚本-->
+    <script src="https://labfile.oss.aliyuncs.com/courses/3574/socket.js"></script>
+
+    <script type="text/javascript">
+        // 初始化连接
+        let socket = io();
+        // 监听 receiveMsg 事件，用来接收其他客户端推送的消息
+        socket.on("receiveMsg", function (data) {
+            console.log(data);
+            content.value += data.client + ":" + data.msg + "\r\n";
+        });
+
+        let content = document.getElementById("content");
+        let sendMsg = document.getElementById("sendMsg");
+        let btn_send = document.getElementById("btn_send");
+        let btn_joinRoom = document.getElementById("btn-joinRoom");
+        let btn_leaveRoom = document.getElementById("btn-leaveRoom");
+        let txtRoom = document.getElementById("txtRoom");
+        let el_clientName = document.getElementById("clientName");
+
+        let clientName = "客户端" + Math.ceil(Math.random() * 10);
+        el_clientName.innerHTML = clientName;
+
+        btn_leaveRoom.addEventListener("click", function () {
+            socket.emit("leaveRoom", { "channelName": txtRoom.value }, function (data) {
+                //打印离开频道后服务端返回的信息
+                console.log("离开频道：" + JSON.stringify(data))
+            });
+            txtRoom.value = "";
+        });
+        btn_joinRoom.addEventListener("click", function () {
+            let channelName = txtRoom.value;
+            socket.emit("joinRoom", { "channelName": channelName }, function (data) {
+                //打印加入频道成功后返回的信息
+                console.log("加入频道：" + JSON.stringify(data));
+            })
+        });
+        btn_send.addEventListener("click", function () {
+            if (!sendMsg.value) {
+                alert("请输入频道号"); return;
+            }
+            let data = { "msg": sendMsg.value, "channelName": txtRoom.value, "client": clientName };
+            //给服务端发送 sendMsg事件名的消息
+            socket.emit("sendMsg", data, function (data) {
+                //打印消息发送成功后服务端返回的信息
+                console.log("消息发送：" + JSON.stringify(data));
+            });
+            content.value += data.client + ":" + data.msg + "\r\n";
+            sendMsg.value = "";
+        });
+
+    </script>
+</body>
+
+</html>
